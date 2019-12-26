@@ -53,6 +53,10 @@ public:
         return _ignoreAuthChecksReturnValue;
     }
 
+    virtual bool IsLocalHostConnection() const {
+        return false;
+    }
+
     virtual bool shouldAllowLocalhost() const {
         return _allowLocalhostReturnValue;
     }

@@ -427,10 +427,19 @@ OpTime logOp(OperationContext* opCtx,
              StmtId statementId,
              const OplogLink& oplogLink,
              const OplogSlot& oplogSlot) {
+    BSONElement first = obj.firstElement();
     auto replCoord = ReplicationCoordinator::get(opCtx);
     // For commands, the test below is on the command ns and therefore does not check for
     // specific namespaces such as system.profile. This is the caller's responsibility.
-    if (replCoord->isOplogDisabledFor(opCtx, nss)) {
+
+    // Modified by jdcloud.com/mongodb
+    // MongoDB will not create a oplog when doing something for 'local' database.
+    // For add 'oplogDeleteGuard' for local.oplog.rs, we must create a log when we collMod oplog.rs on oplogDeleteGuard option and we run collMod on a primary node.
+    if (replCoord->isOplogDisabledFor(opCtx, nss) && 
+            !(strcmp(first.fieldName(), "collMod") == 0 && 
+                NamespaceString(nss.db(), first.valuestr()).isOplog() &&  
+                obj.hasField("oplogDeleteGuard") == true && 
+                replCoord->canAcceptWritesForOplogDeleteGuard_UNSAFE(opCtx, nss.db(), obj))) {
         uassert(ErrorCodes::IllegalOperation,
                 str::stream() << "retryable writes is not supported for unreplicated ns: "
                               << nss.ns(),
@@ -715,6 +724,24 @@ std::pair<OptionalCollectionUUID, NamespaceString> parseCollModUUIDAndNss(Operat
         return std::pair<OptionalCollectionUUID, NamespaceString>(boost::none, parseNs(ns, cmd));
     }
     CollectionUUID uuid = uassertStatusOK(UUID::parse(ui));
+   
+    //The secondary node skips the uuid check when apply oplogDeleteGuard. 
+    //No need to parse uuid through ui, directly use uuid of local oplog.rs collection
+    BSONForEach(e, cmd) {
+        const auto fieldName = e.fieldNameStringData();
+        if (fieldName == "oplogDeleteGuard") {
+            auto nss = parseNs(ns, cmd);
+            auto db = DatabaseHolder::getDatabaseHolder().get(opCtx, nss.ns());
+            if (!db) {
+                uasserted(ErrorCodes::NamespaceNotFound, 
+                        str::stream() << "Failed to get db name" 
+                                      << redact(cmd.toString()));
+            }
+            auto collection = db->getCollection(opCtx, nss);
+            uuid = collection->uuid().get();
+        }
+    }
+
     auto& catalog = UUIDCatalog::get(opCtx);
     const auto nsByUUID = catalog.lookupNSSByUUID(uuid);
     uassert(ErrorCodes::NamespaceNotFound,

@@ -146,6 +146,14 @@ bool ReplicationCoordinatorMock::canAcceptWritesForDatabase_UNSAFE(OperationCont
     return canAcceptWritesForDatabase(opCtx, dbName);
 }
 
+bool ReplicationCoordinatorMock::canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx,
+                                                        StringData dbName, const BSONObj &request) {
+    if (_alwaysAllowWrites) {
+        return true;
+    }
+    return (dbName == "local" && !request.hasElement("oplogDeleteGuard")) || _memberState.primary();
+}
+
 bool ReplicationCoordinatorMock::canAcceptWritesFor(OperationContext* opCtx,
                                                     const NamespaceString& ns) {
     // TODO

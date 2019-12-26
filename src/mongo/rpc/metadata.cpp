@@ -104,7 +104,7 @@ void readRequestMetadata(OperationContext* opCtx, const BSONObj& metadataObj, bo
             AuthorizationSession* authSession = AuthorizationSession::get(opCtx->getClient());
             // The client is not authenticated and is not using localhost auth bypass.
             if (authSession && !authSession->isAuthenticated() &&
-                !authSession->isUsingLocalhostBypass()) {
+                !authSession->isUsingLocalhostBypass() && !authSession->isUsingLocalhostConnection()) {
                 return;
             }
         }

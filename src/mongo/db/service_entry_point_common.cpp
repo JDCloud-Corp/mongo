@@ -750,7 +750,12 @@ void execCommandDatabase(OperationContext* opCtx,
         ImpersonationSessionGuard guard(opCtx);
         invocation->checkAuthorization(opCtx, request);
 
-        const bool iAmPrimary = replCoord->canAcceptWritesForDatabase_UNSAFE(opCtx, dbname);
+        // Modified by jdcloud.com/mongodb
+        // when we run collMod oplog.rs for local, we must run it on a primary node.
+        // For replication between replica sets, we can run collMod by applyOps on a secondary node.
+        // So do not run collMod by applyOps on a secondary node except for replication.
+        const bool iAmPrimary = replCoord->canAcceptWritesForDatabase_UNSAFE(opCtx, dbname) && 
+                replCoord->canAcceptWritesForOplogDeleteGuard_UNSAFE(opCtx, dbname, request.body);
 
         if (!opCtx->getClient()->isInDirectClient() &&
             !MONGO_FAIL_POINT(skipCheckingForNotMasterInCommandDispatch)) {
@@ -759,7 +764,7 @@ void execCommandDatabase(OperationContext* opCtx,
             bool couldHaveOptedIn = allowed == Command::AllowedOnSecondary::kOptIn;
             bool optedIn =
                 couldHaveOptedIn && ReadPreferenceSetting::get(opCtx).canRunOnSecondary();
-            bool canRunHere = commandCanRunHere(opCtx, dbname, command);
+            bool canRunHere = commandCanRunHere(opCtx, dbname, command, request.body);
             if (!canRunHere && couldHaveOptedIn) {
                 uasserted(ErrorCodes::NotMasterNoSlaveOk, "not master and slaveOk=false");
             }

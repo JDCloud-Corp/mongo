@@ -73,7 +73,7 @@ boost::optional<OperationSessionInfoFromClient> initializeOperationSessionInfo(
         // logical sessions are disabled. A client may authenticate as the __sytem user,
         // or as an externally authorized user.
         AuthorizationSession* authSession = AuthorizationSession::get(opCtx->getClient());
-        if (authSession && authSession->isUsingLocalhostBypass() &&
+        if (authSession && (authSession->isUsingLocalhostBypass() || authSession->isUsingLocalhostConnection()) &&
             !authSession->isAuthenticated()) {
             return boost::none;
         }

@@ -156,6 +156,10 @@ public:
         return false;
     }
 
+    bool isUsingLocalhostConnection() override {
+        return false;
+    }
+
     bool isAuthorizedToParseNamespaceElement(const BSONElement&) override {
         return true;
     }

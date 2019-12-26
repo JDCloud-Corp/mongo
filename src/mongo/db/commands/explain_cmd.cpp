@@ -96,7 +96,7 @@ public:
         uassert(50746,
                 "Explain's child command cannot run on this node. "
                 "Are you explaining a write command on a secondary?",
-                commandCanRunHere(opCtx, _dbName, _innerInvocation->definition()));
+                commandCanRunHere(opCtx, _dbName, _innerInvocation->definition(), _outerRequest->body));
         try {
             BSONObjBuilder bob = result->getBodyBuilder();
             _innerInvocation->explain(opCtx, _verbosity, &bob);

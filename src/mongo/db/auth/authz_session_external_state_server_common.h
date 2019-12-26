@@ -46,6 +46,7 @@ public:
 
     virtual bool shouldAllowLocalhost() const;
     virtual bool shouldIgnoreAuthChecks() const;
+    virtual bool IsLocalHostConnection() const;
     virtual bool serverIsArbiter() const;
 
 protected:

@@ -188,6 +188,8 @@ env.Library(
         'privilege_parser.cpp',
         'resource_pattern.cpp',
         'user_management_commands_parser.cpp',
+        'auth_user_signal_handle.cpp',
+        'auth_extra_priv.cpp',
     ],
     LIBDEPS=[
         'auth',

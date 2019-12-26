@@ -1899,6 +1899,17 @@ bool ReplicationCoordinatorImpl::canAcceptWritesForDatabase_UNSAFE(OperationCont
     return false;
 }
 
+bool ReplicationCoordinatorImpl::canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx,
+                                                        StringData dbName, const BSONObj &request) {
+    if (_canAcceptNonLocalWrites || alwaysAllowNonLocalWrites(*opCtx)) {
+        return true;
+    }
+    if (dbName == kLocalDB && !request.hasElement("oplogDeleteGuard")) {
+        return true;
+    }
+    return false;
+}
+
 bool ReplicationCoordinatorImpl::canAcceptWritesFor(OperationContext* opCtx,
                                                     const NamespaceString& ns) {
     invariant(opCtx->lockState()->isLocked());

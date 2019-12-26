@@ -36,9 +36,10 @@
 
 namespace mongo {
 
-bool commandCanRunHere(OperationContext* opCtx, const std::string& dbname, const Command* command) {
+bool commandCanRunHere(OperationContext* opCtx, const std::string& dbname, const Command* command, const BSONObj& request) {
     auto replCoord = repl::ReplicationCoordinator::get(opCtx);
-    if (replCoord->canAcceptWritesForDatabase_UNSAFE(opCtx, dbname))
+    if (replCoord->canAcceptWritesForDatabase_UNSAFE(opCtx, dbname) && 
+        replCoord->canAcceptWritesForOplogDeleteGuard_UNSAFE(opCtx, dbname, request))
         return true;  // primary: always ok
     if (!opCtx->writesAreReplicated())
         return true;  // standalone: always ok

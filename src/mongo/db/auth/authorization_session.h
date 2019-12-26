@@ -249,6 +249,8 @@ public:
     // Checks if this connection is using the localhost bypass
     virtual bool isUsingLocalhostBypass() = 0;
 
+    virtual bool isUsingLocalhostConnection() = 0;
+
     // Checks if this connection has the privileges necessary to parse a namespace from a
     // given BSONElement.
     virtual bool isAuthorizedToParseNamespaceElement(const BSONElement& elem) = 0;

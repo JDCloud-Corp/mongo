@@ -76,6 +76,7 @@ struct CollModRequest {
     std::string collValidationLevel = {};
     BSONElement usePowerOf2Sizes = {};
     BSONElement noPadding = {};
+    BSONElement oplogDeleteGuard = {};
 };
 
 StatusWith<CollModRequest> parseCollModRequest(OperationContext* opCtx,
@@ -240,6 +241,8 @@ StatusWith<CollModRequest> parseCollModRequest(OperationContext* opCtx,
                 cmr.usePowerOf2Sizes = e;
             else if (fieldName == "noPadding")
                 cmr.noPadding = e;
+            else if (fieldName == "oplogDeleteGuard")
+                cmr.oplogDeleteGuard = e;
             else
                 return Status(ErrorCodes::InvalidOptions,
                               str::stream() << "unknown option to collMod: " << fieldName);
@@ -424,6 +427,10 @@ Status _collModInternal(OperationContext* opCtx,
     // NoPadding
     if (!cmr.noPadding.eoo())
         setCollectionOptionFlag(opCtx, coll, cmr.noPadding, result);
+		
+	//OplogDeleteGuard
+    if (!cmr.oplogDeleteGuard.eoo())
+        coll->getRecordStore()->setOplogDeleteGuard(cmr.oplogDeleteGuard.timestamp());
 
     // Upgrade unique indexes
     if (upgradeUniqueIndexes) {

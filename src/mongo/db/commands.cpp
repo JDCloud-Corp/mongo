@@ -92,7 +92,7 @@ bool checkAuthorizationImplPreParse(OperationContext* opCtx,
                     client->getIsLocalHostConnection());
         return true;  // Blanket authorization: don't need to check anything else.
     }
-    if (authzSession->isUsingLocalhostBypass())
+    if (authzSession->isUsingLocalhostBypass() || authzSession->isUsingLocalhostConnection())
         return false;  // Still can't decide on auth because of the localhost bypass.
     uassert(ErrorCodes::Unauthorized,
             str::stream() << "command " << command->getName() << " requires authentication",

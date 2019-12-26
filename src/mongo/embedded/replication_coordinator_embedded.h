@@ -64,6 +64,7 @@ public:
 
     bool canAcceptWritesForDatabase(OperationContext* opCtx, StringData dbName) override;
     bool canAcceptWritesForDatabase_UNSAFE(OperationContext* opCtx, StringData dbName) override;
+    bool canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx, StringData dbName, const BSONObj &request) override;
 
     bool canAcceptWritesFor(OperationContext* opCtx, const NamespaceString& ns) override;
     bool canAcceptWritesFor_UNSAFE(OperationContext* opCtx, const NamespaceString& ns) override;
