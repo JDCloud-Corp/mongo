@@ -212,6 +212,12 @@ void OplogReader::connectToSyncSource(OperationContext* txn,
         return;
     }  // while (true)
 }
-
+BSONObj OplogReader::getOplogStats(const std::string& ns) {
+    BSONObj info;
+    BSONObjBuilder builder;
+    builder.append("collStats", nsToCollectionSubstring(ns));
+    conn()->runCommand(nsToDatabase(ns), builder.obj(), info);
+    return info;
+}
 }  // namespace repl
 }  // namespace mongo

@@ -406,10 +406,15 @@ void _logOp(OperationContext* txn,
             ReplicationCoordinator::Mode replMode,
             bool updateOpTime) {
     NamespaceString nss(ns);
-    if (oplogDisabled(txn, replMode, nss))
+    ReplicationCoordinator* replCoord = getGlobalReplicationCoordinator();
+    BSONElement first = obj.firstElement();
+    if (oplogDisabled(txn, replMode, nss) &&
+        !(strcmp(first.fieldName(), "collMod") == 0 && 
+            NamespaceString(nss.db(), first.valuestr()).isOplog() && 
+            obj.hasField("oplogDeleteGuard") == true && 
+            replCoord->canAcceptWritesForOplogDeleteGuard(nss.db(), obj)))
         return;
 
-    ReplicationCoordinator* replCoord = getGlobalReplicationCoordinator();
     vector<unique_ptr<OplogDocWriter>> writers;
     Collection* oplog = getLocalOplogCollection(txn, oplogName);
     Lock::DBLock lk(txn->lockState(), "local", MODE_IX);

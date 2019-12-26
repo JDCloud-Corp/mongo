@@ -241,7 +241,7 @@ Status refetch(FixUpInfo& fixUpInfo, const BSONObj& ourObj) {
 
                 if (modification == "validator" || modification == "validationAction" ||
                     modification == "validationLevel" || modification == "usePowerOf2Sizes" ||
-                    modification == "noPadding") {
+                    modification == "noPadding" || modification == "oplogDeleteGuard") {
                     fixUpInfo.collectionsToResyncMetadata.insert(ns.ns());
                     continue;
                 }

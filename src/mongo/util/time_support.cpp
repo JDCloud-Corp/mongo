@@ -888,8 +888,8 @@ static unsigned long long resyncInterval = 0;
 static SimpleMutex _curTimeMicros64ReadMutex;
 static SimpleMutex _curTimeMicros64ResyncMutex;
 
-typedef WINBASEAPI VOID(WINAPI* pGetSystemTimePreciseAsFileTime)(_Out_ LPFILETIME
-                                                                     lpSystemTimeAsFileTime);
+// typedef WINBASEAPI VOID(WINAPI* pGetSystemTimePreciseAsFileTime)(_Out_ LPFILETIME
+//                                                                      lpSystemTimeAsFileTime);
 
 static pGetSystemTimePreciseAsFileTime GetSystemTimePreciseAsFileTimeFunc;
 

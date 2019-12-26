@@ -91,6 +91,7 @@ public:
         return findOne(ns.c_str(), Query().sort(reverseNaturalObj));
     }
 
+    BSONObj getOplogStats(const std::string& ns);
     /* SO_TIMEOUT (send/recv time out) for our DBClientConnections */
     static const Seconds kSocketTimeout;
 

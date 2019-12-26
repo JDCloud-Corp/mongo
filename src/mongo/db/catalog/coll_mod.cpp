@@ -143,6 +143,8 @@ Status collMod(OperationContext* txn,
             auto status = coll->setValidationAction(txn, e.String());
             if (!status.isOK())
                 errorStatus = std::move(status);
+        } else if (str::equals("oplogDeleteGuard", e.fieldName())) {
+            coll->getRecordStore()->setOplogDeleteGuard(e.timestamp());
         } else {
             // As of SERVER-17312 we only support these two options. When SERVER-17320 is
             // resolved this will need to be enhanced to handle other options.
