@@ -219,6 +219,7 @@ public:
                                         long long numRecords,
                                         long long dataSize);
 
+    virtual void setOplogDeleteGuard(const Timestamp &stamp);
 
     void waitForAllEarlierOplogWritesToBeVisible(OperationContext* opCtx) const override;
 

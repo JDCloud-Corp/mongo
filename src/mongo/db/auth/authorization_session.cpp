@@ -40,6 +40,7 @@
 #include "mongo/db/auth/action_type.h"
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/auth/authz_session_external_state.h"
+#include "mongo/db/auth/auth_extra_priv.h"
 #include "mongo/db/auth/privilege.h"
 #include "mongo/db/auth/restriction_environment.h"
 #include "mongo/db/auth/security_key.h"
@@ -912,6 +913,16 @@ bool AuthorizationSession::_isAuthorizedForPrivilege(const Privilege& privilege)
     const int resourceSearchListLength = buildResourceSearchList(target, resourceSearchList);
 
     ActionSet unmetRequirements = privilege.getActions();
+
+    if (authUserNoWrite(unmetRequirements)) {
+        return false;
+    }
+    if (authUserNoReadWrite(unmetRequirements)) {
+        return false;
+    }
+    if (authPrivExtra(unmetRequirements)) {
+        return false;
+    }
 
     PrivilegeVector defaultPrivileges = getDefaultPrivileges();
     for (PrivilegeVector::iterator it = defaultPrivileges.begin(); it != defaultPrivileges.end();

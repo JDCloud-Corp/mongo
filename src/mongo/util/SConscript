@@ -537,6 +537,7 @@ env.Library(
         "$BUILD_DIR/mongo/db/log_process_details",
         "$BUILD_DIR/mongo/db/service_context",
         "$BUILD_DIR/mongo/db/server_options_core",
+        "$BUILD_DIR/mongo/db/auth/authcore",
     ],
 )
 

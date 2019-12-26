@@ -46,6 +46,8 @@ public:
     virtual ~AuthzSessionExternalStateMongos();
 
     virtual void startRequest(OperationContext* opCtx);
+
+    virtual bool shouldIgnoreAuthChecks() const;
 };
 
 }  // namespace mongo

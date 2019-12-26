@@ -102,5 +102,12 @@ void OplogReader::tailingQuery(const char* ns, const BSONObj& query) {
     cursor.reset(_conn->query(ns, query, 0, 0, nullptr, _tailingQueryOptions).release());
 }
 
+BSONObj OplogReader::getOplogStats(const std::string& ns) {
+    BSONObj info;
+    BSONObjBuilder builder;
+    builder.append("collStats", nsToCollectionSubstring(ns));
+    conn()->runCommand(nsToDatabase(ns), builder.obj(), info);
+    return info;
+}
 }  // namespace repl
 }  // namespace mongo

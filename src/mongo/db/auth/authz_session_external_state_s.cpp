@@ -35,6 +35,7 @@
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/jsobj.h"
 #include "mongo/s/grid.h"
+#include "mongo/db/client.h"
 
 namespace mongo {
 
@@ -44,6 +45,13 @@ AuthzSessionExternalStateMongos::~AuthzSessionExternalStateMongos() {}
 
 void AuthzSessionExternalStateMongos::startRequest(OperationContext* opCtx) {
     _checkShouldAllowLocalhost(opCtx);
+}
+
+bool AuthzSessionExternalStateMongos::shouldIgnoreAuthChecks() const {
+    // TODO(spencer): get "isInDirectClient" from OperationContext
+    return cc().isInDirectClient() ||
+        AuthzSessionExternalStateServerCommon::shouldIgnoreAuthChecks() ||
+        cc().getIsLocalHostConnection();
 }
 
 }  // namespace mongo
