@@ -1909,6 +1909,16 @@ bool ReplicationCoordinatorImpl::isMasterForReportingPurposes() {
     return false;
 }
 
+bool ReplicationCoordinatorImpl::canAcceptWritesForOplogDeleteGuard(StringData dbName, const BSONObj &request) {
+	if (_canAcceptNonLocalWrites) {
+		return true;
+	}
+	if (dbName == "local" && !request.hasElement("oplogDeleteGuard")) {
+		return true;
+	}
+	return !replAllDead && _settings.isMaster();
+}
+
 bool ReplicationCoordinatorImpl::canAcceptWritesForDatabase(StringData dbName) {
     // _canAcceptNonLocalWrites is always true for standalone nodes, always false for nodes
     // started with --slave, and adjusted based on primary+drain state in replica sets.

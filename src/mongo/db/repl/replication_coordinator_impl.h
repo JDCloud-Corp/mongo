@@ -144,6 +144,8 @@ public:
 
     virtual bool canAcceptWritesForDatabase(StringData dbName);
 
+    virtual bool canAcceptWritesForOplogDeleteGuard(StringData dbName, const BSONObj &request);
+
     bool canAcceptWritesFor(const NamespaceString& ns) override;
 
     virtual Status checkIfWriteConcernCanBeSatisfied(const WriteConcernOptions& writeConcern) const;

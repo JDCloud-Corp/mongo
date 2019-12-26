@@ -1354,7 +1354,8 @@ void Command::execCommand(OperationContext* txn,
 
         repl::ReplicationCoordinator* replCoord =
             repl::ReplicationCoordinator::get(txn->getClient()->getServiceContext());
-        const bool iAmPrimary = replCoord->canAcceptWritesForDatabase(dbname);
+        const bool iAmPrimary = replCoord->canAcceptWritesForDatabase(dbname) &&
+		        replCoord->canAcceptWritesForOplogDeleteGuard(dbname, request.getCommandArgs());
 
         {
             bool commandCanRunOnSecondary = command->slaveOk();
