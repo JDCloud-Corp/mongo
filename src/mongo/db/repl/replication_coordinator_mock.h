@@ -98,6 +98,7 @@ public:
     virtual bool canAcceptWritesForDatabase(OperationContext* opCtx, StringData dbName);
 
     virtual bool canAcceptWritesForDatabase_UNSAFE(OperationContext* opCtx, StringData dbName);
+    virtual bool canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx, StringData dbName, const BSONObj &request);
 
     bool canAcceptWritesFor(OperationContext* opCtx, const NamespaceString& ns) override;
 

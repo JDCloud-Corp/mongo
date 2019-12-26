@@ -37,6 +37,8 @@
 
 #if !defined(_WIN32)
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #endif
 
 #include "mongo/db/log_process_details.h"
@@ -51,6 +53,7 @@
 #include "mongo/util/scopeguard.h"
 #include "mongo/util/signal_handlers_synchronous.h"
 #include "mongo/util/signal_win32.h"
+#include "mongo/db/auth/auth_user_signal_handle.h"
 
 #if defined(_WIN32)
 namespace {
@@ -190,6 +193,15 @@ void signalProcessingThread(LogFileStatus rotate) {
                     logProcessDetailsForLogRotate();
                 }
                 break;
+            case SIGUSR2:
+                log() << "got signal SIGUSR2";
+                handleUserDefinedSignal();
+                break;
+            case SIGCHLD:
+                log() << "got signal SIGCHLD";
+                while(::waitpid(-1, NULL, WNOHANG) > 0)
+                    ;   
+                break;
             default:
                 // interrupt/terminate signal
                 log() << "got signal " << actualSignal << " (" << strsignal(actualSignal)
@@ -216,7 +228,9 @@ void setupSignalHandlers() {
     sigaddset(&asyncSignals, SIGINT);
     sigaddset(&asyncSignals, SIGTERM);
     sigaddset(&asyncSignals, SIGUSR1);
+    sigaddset(&asyncSignals, SIGUSR2);
     sigaddset(&asyncSignals, SIGXCPU);
+    sigaddset(&asyncSignals, SIGCHLD);
 #endif
 }
 

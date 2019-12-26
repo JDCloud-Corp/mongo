@@ -75,6 +75,7 @@ struct CollModRequest {
     std::string collValidationLevel = {};
     BSONElement usePowerOf2Sizes = {};
     BSONElement noPadding = {};
+    BSONElement oplogDeleteGuard = {};
     // Indicates whether any of the above fields have been set.
     bool isEmptyCollModRequest = true;
 };
@@ -252,6 +253,8 @@ StatusWith<CollModRequest> parseCollModRequest(OperationContext* opCtx,
                 cmr.usePowerOf2Sizes = e;
             else if (fieldName == "noPadding")
                 cmr.noPadding = e;
+            else if (fieldName == "oplogDeleteGuard")
+                cmr.oplogDeleteGuard = e;
             else
                 return Status(ErrorCodes::InvalidOptions,
                               str::stream() << "unknown option to collMod: " << fieldName);
@@ -435,6 +438,10 @@ Status _collModInternal(OperationContext* opCtx,
     // NoPadding
     if (!cmr.noPadding.eoo())
         setCollectionOptionFlag(opCtx, coll, cmr.noPadding, result);
+
+    //OplogDeleteGuard
+    if (!cmr.oplogDeleteGuard.eoo())
+        coll->getRecordStore()->setOplogDeleteGuard(cmr.oplogDeleteGuard.timestamp());
 
     // Modify collection UUID if we are upgrading or downgrading. This is a no-op if we have
     // already upgraded or downgraded. As we don't assign UUIDs to system.indexes (SERVER-29926),
