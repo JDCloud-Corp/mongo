@@ -225,6 +225,12 @@ public:
      * the function returns.
      */
     virtual bool canAcceptWritesForDatabase_UNSAFE(OperationContext* opCtx, StringData dbName) = 0;
+    
+    /**
+     * When the cmd command executed by the local library updates oplogDeleteGuard,
+     * the native role must be primary
+     */
+    virtual bool canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx, StringData dbName, const BSONObj &request) = 0;
 
     /**
      * Returns true if it is valid for this node to accept writes on the given namespace.

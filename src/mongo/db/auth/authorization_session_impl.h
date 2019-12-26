@@ -142,6 +142,8 @@ public:
 
     bool isUsingLocalhostBypass() override;
 
+    bool isUsingLocalhostConnection() override;
+
     bool isAuthorizedToParseNamespaceElement(const BSONElement& elem) override;
 
     bool isAuthorizedToCreateRole(const auth::CreateOrUpdateRoleArgs& args) override;

@@ -40,6 +40,7 @@
 #include "mongo/db/auth/action_type.h"
 #include "mongo/db/auth/authorization_manager.h"
 #include "mongo/db/auth/authz_session_external_state.h"
+#include "mongo/db/auth/auth_extra_priv.h"
 #include "mongo/db/auth/privilege.h"
 #include "mongo/db/auth/restriction_environment.h"
 #include "mongo/db/auth/security_key.h"
@@ -974,6 +975,16 @@ bool AuthorizationSessionImpl::_isAuthorizedForPrivilege(const Privilege& privil
 
     ActionSet unmetRequirements = privilege.getActions();
 
+    if (authUserNoWrite(unmetRequirements)) {
+        return false;
+    }
+    if (authUserNoReadWrite(unmetRequirements)) {
+        return false;
+    }
+    if (authPrivExtra(unmetRequirements)) {
+        return false;
+    }
+
     PrivilegeVector defaultPrivileges = getDefaultPrivileges();
     for (PrivilegeVector::iterator it = defaultPrivileges.begin(); it != defaultPrivileges.end();
          ++it) {
@@ -1066,6 +1077,10 @@ RoleNameIterator AuthorizationSessionImpl::getImpersonatedRoleNames() {
 
 bool AuthorizationSessionImpl::isUsingLocalhostBypass() {
     return getAuthorizationManager().isAuthEnabled() && _externalState->shouldAllowLocalhost();
+}
+
+bool AuthorizationSessionImpl::isUsingLocalhostConnection() {
+    return getAuthorizationManager().isAuthEnabled() && _externalState->IsLocalHostConnection();
 }
 
 // Clear the vectors of impersonated usernames and roles.

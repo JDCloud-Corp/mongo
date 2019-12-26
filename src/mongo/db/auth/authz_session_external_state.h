@@ -63,6 +63,8 @@ public:
     // are that auth isn't enabled or the connection is a "god" connection.
     virtual bool shouldIgnoreAuthChecks() const = 0;
 
+    virtual bool IsLocalHostConnection() const = 0;
+
     // Returns true if this connection should be treated as a localhost connection with no
     // admin authentication users created. This condition is used to allow the creation of
     // the first user on a server with authorization enabled.

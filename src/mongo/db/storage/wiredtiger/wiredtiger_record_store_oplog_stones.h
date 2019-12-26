@@ -93,6 +93,7 @@ public:
     // The start point of where to truncate next. Used by the background reclaim thread to
     // efficiently truncate records with WiredTiger by skipping over tombstones, etc.
     RecordId firstRecord;
+    Timestamp oplogDeleteGuard;
 
     //
     // The following methods are public only for use in tests.
@@ -124,6 +125,8 @@ private:
                                     int64_t estBytesPerStone);
 
     void _pokeReclaimThreadIfNeeded();
+
+    boost::optional<OplogStones::Stone> _peekOldestStone_inlock() const;
 
     static const uint64_t kRandomSamplesPerStone = 10;
 

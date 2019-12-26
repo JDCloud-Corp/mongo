@@ -499,7 +499,7 @@ Status rollback_internal::updateFixUpInfoFromLocalOplogEntry(FixUpInfo& fixUpInf
 
                     if (modification == "validator" || modification == "validationAction" ||
                         modification == "validationLevel" || modification == "usePowerOf2Sizes" ||
-                        modification == "noPadding") {
+                        modification == "noPadding" || modification == "oplogDeleteGuard") {
                         fixUpInfo.collectionsToResyncMetadata.insert(*uuid);
                         continue;
                     }

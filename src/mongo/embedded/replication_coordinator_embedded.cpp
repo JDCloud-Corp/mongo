@@ -73,6 +73,11 @@ bool ReplicationCoordinatorEmbedded::canAcceptWritesForDatabase_UNSAFE(Operation
     return true;
 }
 
+bool ReplicationCoordinatorEmbedded::canAcceptWritesForOplogDeleteGuard_UNSAFE(OperationContext* opCtx, 
+                                                                                StringData dbName, const BSONObj &request) {
+    return true;
+}
+
 bool ReplicationCoordinatorEmbedded::canAcceptWritesFor(OperationContext* opCtx,
                                                         const NamespaceString& ns) {
     return true;

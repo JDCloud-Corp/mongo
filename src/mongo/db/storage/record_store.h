@@ -648,6 +648,11 @@ public:
     virtual void updateStatsAfterRepair(OperationContext* opCtx,
                                         long long numRecords,
                                         long long dataSize) = 0;
+    
+    /**
+     * Set the time when the incremental backup oplog upload succeeds.
+     */
+    virtual void setOplogDeleteGuard(const Timestamp &stamp) {}
 
     /**
      * used to support online change oplog size.
