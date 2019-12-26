@@ -193,6 +193,8 @@ public:
                                         long long numRecords,
                                         long long dataSize);
 
+    virtual void setOplogDeleteGuard(const Timestamp &stamp);
+
     bool isOplog() const {
         return _isOplog;
     }

@@ -1729,6 +1729,16 @@ bool ReplicationCoordinatorImpl::canAcceptWritesForDatabase(StringData dbName) {
     return !replAllDead && _settings.isMaster();
 }
 
+bool ReplicationCoordinatorImpl::canAcceptWritesForOplogDeleteGuard(StringData dbName, const BSONObj &request) {
+    if (_canAcceptNonLocalWrites) {
+        return true;
+    }
+    if (dbName == "local" && !request.hasElement("oplogDeleteGuard")) {
+        return true;
+    }
+    return !replAllDead && _settings.isMaster();
+}
+
 bool ReplicationCoordinatorImpl::canAcceptWritesFor(const NamespaceString& ns) {
     if (_memberState.rollback() && ns.isOplog()) {
         return false;

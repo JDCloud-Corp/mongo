@@ -250,6 +250,7 @@ public:
      */
     virtual bool canAcceptWritesForDatabase(StringData dbName) = 0;
 
+    virtual bool canAcceptWritesForOplogDeleteGuard(StringData dbname, const BSONObj &request) = 0;
     /**
      * Returns true if it is valid for this node to accept writes on the given namespace.
      *
