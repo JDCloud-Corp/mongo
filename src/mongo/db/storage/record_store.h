@@ -621,7 +621,7 @@ public:
     virtual void updateStatsAfterRepair(OperationContext* txn,
                                         long long numRecords,
                                         long long dataSize) = 0;
-
+    virtual void setOplogDeleteGuard(const Timestamp &stamp) {}
 protected:
     std::string _ns;
 };

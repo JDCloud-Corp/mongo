@@ -120,6 +120,15 @@ void truncateAndResetOplog(OperationContext* txn,
     MONGO_WRITE_CONFLICT_RETRY_LOOP_END(txn, "truncate", collection->ns().ns());
 }
 
+void resetOplogDeleteGuard(OperationContext* txn,
+                           const Timestamp &stamp) {
+	AutoGetDb autoDb(txn, "local", MODE_X);
+	invariant(txn->lockState()->isCollectionLockedForMode(rsOplogName, MODE_X));
+	// Reset the oplog delete guard.
+	Collection* collection = autoDb.getDb()->getCollection(rsOplogName);
+	collection->getRecordStore()->setOplogDeleteGuard(stamp);
+}
+
 bool _initialSyncClone(OperationContext* txn,
                        Cloner& cloner,
                        const std::string& host,
@@ -304,6 +313,15 @@ Status _initialSync(OperationContext* txn, BackgroundSync* bgsync) {
         sleepsecs(15);
         return Status(ErrorCodes::InitialSyncFailure, msg);
     }
+
+    BSONObj oplogStats = r.getOplogStats(rsOplogName);
+	if (oplogStats.isEmpty()) {
+	    std::string msg = "initial sync couldn't read remote oplog stats";
+		log() << msg;
+		sleepsecs(15);
+		return Status(ErrorCodes::InitialSyncFailure, msg);
+	}
+    resetOplogDeleteGuard(txn, oplogStats["oplogDeleteGuard"].timestamp());
 
     log() << "initial sync drop all databases";
     dropAllDatabasesExceptLocal(txn);

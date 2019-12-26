@@ -62,6 +62,7 @@
 #include "mongo/util/mongoutils/str.h"
 #include "mongo/util/scopeguard.h"
 #include "mongo/util/time_support.h"
+#include <sys/file.h>
 
 //#define RS_ITERATOR_TRACE(x) log() << "WTRS::Iterator " << x
 #define RS_ITERATOR_TRACE(x)
@@ -87,7 +88,75 @@ bool shouldUseOplogHack(OperationContext* opCtx, const std::string& uri) {
 
     return (appMetadata.getValue().getIntField("oplogKeyExtractionVersion") == 1);
 }
+static const char *OplogDeleteGuardFile = "oplog_delete_guard";
+static const char *OplogDeleteGuardTmpFile = "oplog_delete_guard.tmp";
+bool writeOplogDeleteGuard(const Timestamp& stamp) {
+	FILE *fd;
+    char *mnt = NULL;
+	std::string ftmp, fname;
 
+    if ((mnt = getenv("MOUNTDIR")) != NULL) {
+		ftmp = mnt + std::string("/var/") + OplogDeleteGuardTmpFile;
+	    fname = mnt + std::string("/var/") + OplogDeleteGuardFile;
+	} else {
+		ftmp = std::string("./") + OplogDeleteGuardTmpFile;
+		fname = std::string("./") + OplogDeleteGuardFile;
+	}
+	if ((fd = fopen(ftmp.c_str(), "w")) == NULL) {
+		LOG(1) << "Open file " << ftmp << " failed!";
+		return false;
+	}
+    if (flock(fileno(fd), LOCK_EX) != 0) {
+		fclose(fd);
+	    LOG(1) << "Acquire file lock failed!";
+		return false;
+	}
+	if (fprintf(fd, "%10u,%10u", stamp.getSecs(), stamp.getInc()) < 0) {
+	    fclose(fd);
+	    LOG(1) << "fprintf failed";
+		return false;
+	}
+	flock(fileno(fd), LOCK_UN);
+	fclose(fd);
+
+	if (rename(ftmp.c_str(), fname.c_str()) != 0) {
+		LOG(1) << "rename failed, errno " << strerror(errno);
+		return false;
+	}
+																											    
+	return true;
+}
+bool readOplogDeleteGuard(Timestamp& stamp) {
+	FILE *fd;
+	char *mnt = NULL;
+	std::string path;
+	unsigned t, i;
+					    
+	if ((mnt = getenv("MOUNTDIR")) != NULL) {
+        path = mnt + std::string("/var/") + OplogDeleteGuardFile;
+	} else {
+		path = std::string("./") + OplogDeleteGuardFile;
+	}
+	if ((fd = fopen(path.c_str(), "r")) == NULL) {
+		LOG(1) << "Open file " << path << " failed!";
+		return false;
+	}
+	if (flock(fileno(fd), LOCK_SH) != 0) {
+		fclose(fd);
+		LOG(1) << "Acquire file lock failed!";
+		return false;
+	}
+    if (fscanf(fd, "%u,%u", &t, &i) != 2) {
+		fclose(fd);
+	    LOG(1) << "fscanf failed";
+	    return false;
+	}
+    flock(fileno(fd), LOCK_UN);
+	fclose(fd);
+
+	stamp = Timestamp(t, i);
+	return true;
+}
 }  // namespace
 
 MONGO_FP_DECLARE(WTWriteConflictException);
@@ -195,6 +264,17 @@ WiredTigerRecordStore::OplogStones::peekOldestStoneIfNeeded() const {
         return {};
     }
 
+    auto stone = _stones.front();
+    Timestamp ts = Timestamp(stone.lastRecord.repr());
+    if (!oplogDeleteGuard.isNull() && ts >= oplogDeleteGuard) {
+	    return {};
+	}
+
+    return stone;
+}
+
+boost::optional<WiredTigerRecordStore::OplogStones::Stone>                                                                                                             
+WiredTigerRecordStore::OplogStones::_peekOldestStone_inlock() const {
     return _stones.front();
 }
 
@@ -426,7 +506,10 @@ void WiredTigerRecordStore::OplogStones::_calculateStonesBySampling(OperationCon
 }
 
 void WiredTigerRecordStore::OplogStones::_pokeReclaimThreadIfNeeded() {
-    if (hasExcessStones()) {
+	auto stone = _peekOldestStone_inlock();
+	Timestamp ts = Timestamp(stone->lastRecord.repr());
+    if (hasExcessStones() && (oplogDeleteGuard.isNull() || ts < oplogDeleteGuard)) {
+		LOG(3) << "ts : " << ts.getSecs() << "," << ts.getInc() << " oplogDeleteGuard : " << oplogDeleteGuard.getSecs() << "," << oplogDeleteGuard.getInc();
         _oplogReclaimCv.notify_one();
     }
 }
@@ -841,6 +924,7 @@ WiredTigerRecordStore::WiredTigerRecordStore(OperationContext* ctx,
 
     if (WiredTigerKVEngine::initRsOplogBackgroundThread(ns)) {
         _oplogStones = std::make_shared<OplogStones>(ctx, this);
+		readOplogDeleteGuard(_oplogStones->oplogDeleteGuard);
     }
 
     if (_isOplog) {
@@ -1627,6 +1711,9 @@ void WiredTigerRecordStore::appendCustomStats(OperationContext* txn,
         result->appendIntOrLL("maxSize", static_cast<long long>(_cappedMaxSize / scale));
         result->appendIntOrLL("sleepCount", _cappedSleep.load());
         result->appendIntOrLL("sleepMS", _cappedSleepMS.load());
+        if (_isOplog) {
+            result->append("oplogDeleteGuard", _oplogStones->oplogDeleteGuard);
+        }
     }
     WiredTigerSession* session = WiredTigerRecoveryUnit::get(txn)->getSessionNoTxn(txn);
     WT_SESSION* s = session->getSession();
@@ -1806,6 +1893,12 @@ void WiredTigerRecordStore::updateStatsAfterRepair(OperationContext* txn,
     if (_sizeStorer) {
         _sizeStorer->storeToCache(_uri, numRecords, dataSize);
     }
+}
+
+void WiredTigerRecordStore::setOplogDeleteGuard(const Timestamp &stamp) {
+	LOG(3) << "set oplogDeleteGuard: " << stamp;
+    _oplogStones->oplogDeleteGuard = stamp;
+	writeOplogDeleteGuard(stamp);
 }
 
 RecordId WiredTigerRecordStore::_nextId() {

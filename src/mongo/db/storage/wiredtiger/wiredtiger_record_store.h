@@ -205,6 +205,8 @@ public:
 
     void waitForAllEarlierOplogWritesToBeVisible(OperationContext* txn) const override;
 
+    virtual void setOplogDeleteGuard(const Timestamp &stamp);
+
     bool isOplog() const {
         return _isOplog;
     }

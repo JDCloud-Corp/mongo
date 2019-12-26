@@ -173,6 +173,8 @@ StatusWith<CollModRequest> parseCollModRequest(OperationContext* txn,
                 statusW.getStatus();
 
             cmr.collValidationAction = e.String();
+        } else if (str::equals("oplogDeleteGuard", e.fieldName())) {
+            coll->getRecordStore()->setOplogDeleteGuard(e.timestamp());
         } else if (str::equals("pipeline", e.fieldName())) {
             if (!isView) {
                 return Status(ErrorCodes::InvalidOptions,
