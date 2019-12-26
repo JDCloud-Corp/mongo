@@ -110,6 +110,15 @@ void truncateAndResetOplog(OperationContext* txn,
     MONGO_WRITE_CONFLICT_RETRY_LOOP_END(txn, "truncate", collection->ns().ns());
 }
 
+void resetOplogDeleteGuard(OperationContext* txn,
+                           const Timestamp &stamp) {
+    AutoGetDb autoDb(txn, "local", MODE_X);
+    invariant(txn->lockState()->isCollectionLockedForMode(rsOplogName, MODE_X));
+    // Reset the oplog delete guard.
+    Collection* collection = autoDb.getDb()->getCollection(rsOplogName);
+    collection->getRecordStore()->setOplogDeleteGuard(stamp);
+}
+
 /**
  * Confirms that the "admin" database contains a supported version of the auth
  * data schema.  Terminates the process if the "admin" contains clearly incompatible
@@ -341,6 +350,14 @@ Status _initialSync() {
         return Status(ErrorCodes::InitialSyncFailure, msg);
     }
 
+    BSONObj oplogStats = r.getOplogStats(rsOplogName);
+    if (oplogStats.isEmpty()) {
+        std::string msg = "initial sync couldn't read remote oplog stats";
+        log() << msg;
+        sleepsecs(15);
+        return Status(ErrorCodes::InitialSyncFailure, msg);
+    }
+    resetOplogDeleteGuard(&txn, oplogStats["oplogDeleteGuard"].timestamp());
     // Add field to minvalid document to tell us to restart initial sync if we crash
     setInitialSyncFlag(&txn);
 
